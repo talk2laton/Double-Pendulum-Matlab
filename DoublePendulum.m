@@ -1,16 +1,25 @@
-G  = 9.8;              % acceleration due to gravity, in m/s^2
-L1 = 1.0;              % length of pendulum 1 in m
-L2 = 1.0;              % length of pendulum 2 in m
-M1 = 1.0;              % mass of pendulum 1 in kg
-M2 = 1.0  ;             % mass of pendulum 2 in kg
-f  = (M2/M1)^(1/3);    % ratio of their sizes
-L = L1 + L2 + f/10;    % maximal length of the combined pendulum
+G  = 9.8;               % acceleration due to gravity, in m/s^2
+L1 = 1.0;               % length of pendulum 1 in m
+L2 = 1.0;               % length of pendulum 2 in m
+M1 = 1.0;               % mass of pendulum 1 in kg
+M2 = 8.0;               % mass of pendulum 2 in kg
+M3 = 27.0;              % mass of pendulum 2 in kg
+f2  = (M2/M1)^(1/3);    % ratio of their sizes
+f3  = (M3/M1)^(1/3);    % ratio of their sizes
+L = L1 + L2 + f2/10;    % maximal length of the combined pendulum
 
+vid = VideoWriter('DBPLM2.avi'); set(vid, 'FrameRate',120); 
+open(vid); 
 % Draw the support
-figure('Color','w', 'Units', 'Pixels', 'Position', [24 186 861 736]); 
+xs = [-3, 0, 3]; F = [1, f2, f3];
+txt = ["$M_2 = M_1$  "; "$M_2 = 8M_1 $"; "$M_2 = 27M_1$"];
+figure('Color','w', 'Position', [24 186 1528 736]); hold on; 
+axis([-3*L, 3*L, -1.2*L, L]); daspect([1,1,1]); ax = gca;
+ax.TickLabelInterpreter = "latex"; ax.FontSize = 15;
+
 Ballx = 0.1*cos(linspace(0,2*pi)); Bally = 0.1*sin(linspace(0,2*pi));
-Bush = fill(Ballx, Bally, 0.8*[1,1,1]);  hold on;
-Hinge = fill(0.5*Ballx, 0.5*Bally, 'k');
+arrayfun(@(n)fill(Ballx+xs(n), Bally, 0.8*[1,1,1]), 1:3);
+arrayfun(@(n)fill(0.5*Ballx+xs(n), 0.5*Bally, 'k'), 1:3);
 
 % th1 and th2 are the initial angles (degrees)
 % w10 and w20 are the initial angular velocities (degrees per second)
@@ -20,21 +29,31 @@ x1 = L1*sin(s(1)); y1 = -L1*cos(s(1));  % initial position of bulb 1
 x2 = L2*sin(s(3)) + x1; y2 = -L2*cos(s(3)) + y1;  % initial position of bulb 2
 
 % Draw the Dynamic system
-Line  = plot([0,x1,x2], [0,y1,y2], 'k','LineWidth', 5);
-Bulb1 = fill(x1+Ballx, y1+Bally, 'r');
-Bulb2 = fill(x2+f*Ballx, y2+f*Bally, 'b');
-axis([-1.2*L, 1.2*L,-1.2*L, 1]); daspect([1,1,1]); ax = gca;
-ax.TickLabelInterpreter = "latex"; ax.FontSize = 15;
-dydt = @(state) Dynamics(state, G, L1, L2, M1, M2);
-for n= 1:1000
-    s = s + rk4(dydt, s, dt);
-    x1 = L1*sin(s(1)); y1 = -L1*cos(s(1));
-    x2 = L2*sin(s(3)) + x1; y2 = -L2*cos(s(3)) + y1;
-    Bulb1.XData = 1*Ballx + x1; Bulb1.YData = 1*Bally + y1;
-    Bulb2.XData = f*Ballx + x2; Bulb2.YData = f*Bally + y2;
-    Line.XData = [0,x1,x2];  Line.YData = [0,y1,y2];
-    drawnow; 
+Lines = arrayfun(@(n)plot([0,x1,x2]+xs(n), [0,y1,y2], 'k','LineWidth', 5), 1:3);
+Bulb1s = arrayfun(@(n)fill(x1+Ballx+xs(n), y1+Bally, 'r'), 1:3);
+Bulb2s = arrayfun(@(n)fill(x2+F(n)*Ballx+xs(n), y2+F(n)*Bally, 'b'), 1:3);
+
+arrayfun(@(n)text(xs(n), 1.5, txt(n, :), FontSize = 15, ....
+    HorizontalAlignment = "center", Interpreter="latex"), 1:3);
+
+drawnow; img = getframe(gcf); writeVideo(vid,img);
+dydt = {@(state) Dynamics(state, G, L1, L2, M1, M1) 
+        @(state) Dynamics(state, G, L1, L2, M1, M2) 
+        @(state) Dynamics(state, G, L1, L2, M1, M3)}; 
+s = ones(3,1)*s;
+for n= 1:2400
+    for i = 1:3
+        s(i,:) = s(i,:) + rk4(dydt{i}, s(i,:), dt);
+        x1 = L1*sin(s(i,1)); y1 = -L1*cos(s(i,1));
+        x2 = L2*sin(s(i,3)) + x1; y2 = -L2*cos(s(i,3)) + y1;
+        Bulb1s(i).XData = Ballx + x1+xs(i); Bulb1s(i).YData = Bally + y1;
+        Bulb2s(i).XData = F(i)*Ballx + x2+xs(i); 
+        Bulb2s(i).YData = F(i)*Bally + y2;
+        Lines(i).XData = [0,x1,x2]+xs(i);  Lines(i).YData = [0,y1,y2];
+    end
+    drawnow; img = getframe(gcf); writeVideo(vid,img);
 end
+close(vid)
 
 function dydx = Dynamics(y, G, L1, L2, M1, M2)
     delta = y(3) - y(1); sy1 = sin(y(1)); sy3 = sin(y(3));
