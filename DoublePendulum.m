@@ -8,7 +8,7 @@ f2  = (M2/M1)^(1/3);    % ratio of their sizes
 f3  = (M3/M1)^(1/3);    % ratio of their sizes
 L = L1 + L2 + f2/10;    % maximal length of the combined pendulum
 
-vid = VideoWriter('DBPLM2.avi'); set(vid, 'FrameRate',120); 
+vid = VideoWriter('DBPLM3','MPEG-4'); set(vid, 'FrameRate',120); 
 open(vid); 
 % Draw the support
 xs = [-3, 0, 3]; F = [1, f2, f3];
@@ -16,6 +16,7 @@ txt = ["$M_2 = M_1$  "; "$M_2 = 8M_1 $"; "$M_2 = 27M_1$"];
 figure('Color','w', 'Position', [24 186 1528 736]); hold on; 
 axis([-3*L, 3*L, -1.2*L, L]); daspect([1,1,1]); ax = gca;
 ax.TickLabelInterpreter = "latex"; ax.FontSize = 15;
+axis off;
 
 Ballx = 0.1*cos(linspace(0,2*pi)); Bally = 0.1*sin(linspace(0,2*pi));
 arrayfun(@(n)fill(Ballx+xs(n), Bally, 0.8*[1,1,1]), 1:3);
@@ -23,7 +24,7 @@ arrayfun(@(n)fill(0.5*Ballx+xs(n), 0.5*Bally, 'k'), 1:3);
 
 % th1 and th2 are the initial angles (degrees)
 % w10 and w20 are the initial angular velocities (degrees per second)
-th1 = 120.0; w1 = 0.0; th2 = -60.0; w2 = 0.0; dt = 0.01;
+th1 = 120.0; w1 = 0.0; th2 = -60.0; w2 = 0.0; dt = 0.0083333333;
 s = pi/180*[th1, w1, th2, w2]; % initial state
 x1 = L1*sin(s(1)); y1 = -L1*cos(s(1));  % initial position of bulb 1
 x2 = L2*sin(s(3)) + x1; y2 = -L2*cos(s(3)) + y1;  % initial position of bulb 2
